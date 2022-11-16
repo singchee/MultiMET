@@ -7,3 +7,10 @@ APD1= APD%>%
 MET = METs %>%
     select(c('UR Number', `MET Call DateTime`)) %>%
     rename(URN = 'UR Number', METtime= `MET Call DateTime`)
+
+merged = left_join(APD1, MET, by = "URN") %>% 
+    replace_na(list(METtime=as.Date("1900-1-1")))  %>%
+    rowwise() %>%
+    mutate(match = ifelse(between(METtime, time_start, time_end), 1, 0)) %>%
+    group_by(URN, time_start, time_end) %>%
+    summarise(n = sum(match))
