@@ -1,3 +1,5 @@
+library(tidyverse)
+library(broom.mixed)
 
 APD1= APD%>%
     select(c(`HRN/NIH`, PatientId, AgeICU, HOSP_ADM_DTM, HOSP_DIS_DTM, HOSLOS, ICU_ADM_DTM, ICU_DIS_DTM, ICULOS,
@@ -17,3 +19,8 @@ merged = left_join(APD1, MET, by = "URN") %>%
     summarise(n = sum(match)) %>%
     mutate(DiedHospital=recode(DiedHospital, "Survived" = "0", "Died" = "1")) %>%
     filter(HospitalOutcome != is.na(HospitalOutcome))
+    
+    
+model %>% 
+    tidy(effects = "fixed", conf.int = TRUE) %>%
+    mutate(across(c(estimate, starts_with("conf")), exp))
