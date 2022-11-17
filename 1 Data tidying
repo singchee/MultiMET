@@ -16,11 +16,23 @@ merged = left_join(APD1, MET, by = "URN") %>%
     mutate(match = ifelse(between(METtime, time_start, time_end), 1, 0)) %>%
     group_by(URN, time_start, time_end, AgeICU, HOSP_ADM_DTM, HOSP_DIS_DTM, HOSLOS, ICU_ADM_DTM, ICU_DIS_DTM, ICULOS,
              ICUSource, ICUOutcome, HospitalOutcome,DiedICU, DiedHospital, ANZROD, ANZROD_Inclusion) %>%
-    summarise(n = sum(match)) %>%
-    mutate(DiedHospital=recode(DiedHospital, "Survived" = "0", "Died" = "1")) %>%
+    summarise(no_METs = sum(match)) %>%
+    mutate(DiedHospital=recode(DiedHospital, "Survived" = "0", "Died" = "1"), 
+           no_METs = if_else(no_METs >=3, 3, no_METs)) %>%
     filter(HospitalOutcome != is.na(HospitalOutcome))
     
-    
-model %>% 
+model = glm(as.numeric(DiedHospital)~as.numeric(ANZROD) + as.factor(no_METs), data=merged, family=binomial)
+
+effect=model %>% 
     tidy(effects = "fixed", conf.int = TRUE) %>%
-    mutate(across(c(estimate, starts_with("conf")), exp))
+    filter(str_detect(term, "no_METs")) %>% #filter out predictors that have "series" 
+    mutate(across(c(estimate, starts_with("conf")), exp)) %>%
+    mutate(no_METs = as.factor(seq_along(1:nrow(.))))
+    
+    effect %>%
+    ggplot(aes(x=no_METs, estimate)) + #plot
+    geom_point() + 
+    geom_linerange(aes(ymin = conf.low, ymax = conf.high)) + 
+    ylab('Odds Ratio for Mortality') +
+    xlab('No of METs')
+
