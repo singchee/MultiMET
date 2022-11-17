@@ -12,5 +12,8 @@ merged = left_join(APD1, MET, by = "URN") %>%
     replace_na(list(METtime=as.Date("1900-1-1")))  %>%
     rowwise() %>%
     mutate(match = ifelse(between(METtime, time_start, time_end), 1, 0)) %>%
-    group_by(URN, time_start, time_end) %>%
-    summarise(n = sum(match))
+    group_by(URN, time_start, time_end, AgeICU, HOSP_ADM_DTM, HOSP_DIS_DTM, HOSLOS, ICU_ADM_DTM, ICU_DIS_DTM, ICULOS,
+             ICUSource, ICUOutcome, HospitalOutcome,DiedICU, DiedHospital, ANZROD, ANZROD_Inclusion) %>%
+    summarise(n = sum(match)) %>%
+    mutate(DiedHospital=recode(DiedHospital, "Survived" = "0", "Died" = "1")) %>%
+    filter(HospitalOutcome != is.na(HospitalOutcome))
